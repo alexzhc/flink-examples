@@ -1,0 +1,14 @@
+apiVersion: flink.apache.org/v1beta1
+kind: FlinkSessionJob
+metadata:
+  name: basic-session-job-only-example
+spec:
+  deploymentName: basic-session-deployment-only-example
+  job:
+    # It seems only URL is supported here
+    jarURI: https://repo1.maven.org/maven2/org/apache/flink/flink-examples-streaming_2.12/1.17.0/flink-examples-streaming_2.12-1.17.0-SocketWindowWordCount.jar
+    args:
+    - --port
+    - '9000'
+    parallelism: 2
+    upgradeMode: stateless

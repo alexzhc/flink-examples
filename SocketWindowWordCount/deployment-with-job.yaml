@@ -1,0 +1,65 @@
+apiVersion: flink.apache.org/v1beta1
+kind: FlinkDeployment
+metadata:
+  name: socket-window-word-count-jobmanager
+spec:
+  image: docker.m.daocloud.io/flink:1.17.0
+  flinkVersion: v1_17
+  flinkConfiguration:
+    taskmanager.numberOfTaskSlots: "1"
+  serviceAccount: flink
+  jobManager:
+    resource:
+      memory: "1g"
+      cpu: 1
+    podTemplate:
+      spec:
+        terminationGracePeriodSeconds: 0
+        volumes:
+        - name: downloads
+          emptyDir: {}
+        containers:
+        - name: flink-main-container
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - mountPath: /opt/flink/downloads
+              name: downloads
+        initContainers:
+        - name:  get-examples # download example from an image
+          image: daocloud.io/daocloud/flink-examples:1.17.0
+          imagePullPolicy: Always
+          volumeMounts:
+          - mountPath: /opt/flink/downloads
+            name: downloads
+          command:
+          - sh
+          - -c
+          - |
+            mv -v /examples/*.jar /opt/flink/downloads/
+  taskManager:
+    resource:
+      memory: "1g"
+      cpu: 1
+    podTemplate:
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: task-manager-pod-template
+      spec:
+        terminationGracePeriodSeconds: 0
+        containers:
+        - name: data-stream # create a stream by "top + nc"
+          image: docker.m.daocloud.io/busybox
+          imagePullPolicy: IfNotPresent
+          command:
+          - sh
+          - -c
+          - |
+            top -bd1 | nc -vlkp 9000
+  job:
+    jarURI: local:///opt/flink/downloads/SocketWindowWordCount.jar
+    args:
+    - --port
+    - '9000'
+    parallelism: 2
+    upgradeMode: stateless

@@ -1,0 +1,40 @@
+apiVersion: flink.apache.org/v1beta1
+kind: FlinkDeployment
+metadata:
+  name: basic-session-deployment-only-example
+spec:
+  image: docker.m.daocloud.io/flink:1.17.0
+  flinkVersion: v1_17
+  flinkConfiguration:
+    taskmanager.numberOfTaskSlots: "1"
+  serviceAccount: flink
+  jobManager:
+    resource:
+      memory: "1g"
+      cpu: 1
+    podTemplate:
+      spec:
+        terminationGracePeriodSeconds: 0
+        containers:
+        - name: flink-main-container
+          imagePullPolicy: IfNotPresent
+  taskManager:
+    resource:
+      memory: "1g"
+      cpu: 1
+    podTemplate:
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: task-manager-pod-template
+      spec:
+        terminationGracePeriodSeconds: 0
+        containers:
+        - name: data-stream # create a stream by "top+nc" 
+          image: docker.m.daocloud.io/busybox
+          imagePullPolicy: IfNotPresent
+          command:
+          - sh
+          - -c
+          - |
+            top -bd1 | nc -vlkp 9000
